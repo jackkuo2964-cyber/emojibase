@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emoji 目錄</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f12; --card: #1a1a22; --card-hover: #242430;
+    --accent: #ff6b35; --text: #f0ece8; --muted: #7a7a8a;
+    --border: #2e2e3a; --success: #4ade80;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  header { padding: 48px 32px 32px; text-align: center; position: relative; }
+  header::before {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse at center top, rgba(255,107,53,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .title-label { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; }
+  h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 12px; }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+
+  .search-wrap { max-width: 480px; margin: 28px auto 0; position: relative; }
+  .search-wrap input {
+    width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 20px 12px 44px; color: var(--text); font-size: 15px; font-family: inherit;
+    outline: none; transition: border-color 0.2s;
+  }
+  .search-wrap input::placeholder { color: var(--muted); }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 16px; pointer-events: none; }
+
+  .tab-nav { display: flex; gap: 6px; padding: 20px 32px 0; overflow-x: auto; scrollbar-width: none; justify-content: center; flex-wrap: wrap; }
+  .tab-nav::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    background: var(--card); border: 1px solid var(--border); border-radius: 999px;
+    padding: 7px 16px; color: var(--muted); font-size: 13px; font-family: inherit;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+  }
+  .tab-btn:hover { border-color: var(--accent); color: var(--text); }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+
+  .sections { padding: 32px; max-width: 1100px; margin: 0 auto; }
+  .section { margin-bottom: 40px; display: none; }
+  .section.visible { display: block; }
+
+  .section-title {
+    font-size: 12px; font-family: 'Space Mono', monospace; letter-spacing: 3px;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 14px; padding-left: 2px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 8px; }
+  .emoji-item {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 6px 8px; text-align: center; cursor: pointer;
+    transition: all 0.18s cubic-bezier(.34,1.56,.64,1); position: relative; user-select: none;
+  }
+  .emoji-item:hover { background: var(--card-hover); border-color: var(--accent); transform: scale(1.12); z-index: 2; }
+  .emoji-item:active { transform: scale(0.95); }
+  .emoji-item.copied { border-color: var(--success) !important; background: rgba(74,222,128,0.08) !important; }
+  .emoji-char { font-size: 26px; display: block; line-height: 1; margin-bottom: 4px; pointer-events: none; }
+  .emoji-label { font-size: 9px; color: var(--muted); display: block; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--success); color: #0f2a1a; font-weight: 700; font-size: 13px;
+    padding: 10px 20px; border-radius: 999px; pointer-events: none;
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+    opacity: 0; z-index: 999; white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  .no-results { text-align: center; color: var(--muted); padding: 60px 0; font-size: 15px; display: none; }
+  .no-results.show { display: block; }
+
+  .examples-block { margin-top: 32px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .examples-header {
+    background: rgba(255,107,53,0.08); border-bottom: 1px solid var(--border); padding: 14px 20px;
+    display: flex; align-items: center; gap: 8px; font-size: 12px;
+    font-family: 'Space Mono', monospace; letter-spacing: 2px; color: var(--accent); text-transform: uppercase;
+  }
+  .examples-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .example-card {
+    padding: 18px 20px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background 0.15s; position: relative;
+  }
+  .example-card:hover { background: var(--card-hover); }
+  .example-card:hover .copy-hint { opacity: 1; }
+  .example-card.copied { background: rgba(74,222,128,0.06) !important; border-color: var(--success) !important; }
+  .example-card-label { font-size: 10px; font-family: 'Space Mono', monospace; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+  .example-card pre { font-size: 13px; line-height: 2; color: var(--text); white-space: pre; font-family: 'Noto Sans TC', sans-serif; pointer-events: none; }
+  .copy-hint { position: absolute; top: 12px; right: 14px; font-size: 10px; color: var(--accent); opacity: 0; transition: opacity 0.15s; font-family: 'Space Mono', monospace; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-label">Social Media</div>
+  <h1>Emoji <span>目錄</span></h1>
+  <p class="subtitle">點擊任意 emoji 即可複製</p>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="搜尋 emoji 名稱...">
+  </div>
+</header>
+
+<nav class="tab-nav" id="tabNav">
+  <button class="tab-btn active" data-cat="all">✨ 全部</button>
+  <button class="tab-btn" data-cat="face">😊 表情</button>
+  <button class="tab-btn" data-cat="gesture">👋 手勢</button>
+  <button class="tab-btn" data-cat="heart">❤️ 愛心</button>
+  <button class="tab-btn" data-cat="nature">🌿 自然</button>
+  <button class="tab-btn" data-cat="food">🍕 美食</button>
+  <button class="tab-btn" data-cat="travel">✈️ 旅遊</button>
+  <button class="tab-btn" data-cat="activity">⚽ 活動</button>
+  <button class="tab-btn" data-cat="object">💡 物品</button>
+  <button class="tab-btn" data-cat="symbol">🔥 符號</button>
+  <button class="tab-btn" data-cat="bullet">▪️ 條列符號</button>
+  <button class="tab-btn" data-cat="number">🔢 數字</button>
+  <button class="tab-btn" data-cat="flag">🎌 旗幟</button>
+</nav>
+
+<div class="sections" id="sections"></div>
+<div class="no-results" id="noResults">😢 找不到符合的 emoji</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var toastTimer = null;
+var toastEl = document.getElementById('toast');
+
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { toastEl.classList.remove('show'); }, 1800);
+}
+
+function doCopy(text, cb) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(cb).catch(function() { fallback(text, cb); });
+    } else { fallback(text, cb); }
+  } catch(e) { fallback(text, cb); }
+}
+
+function fallback(text, cb) {
+  var el = document.createElement('textarea');
+  el.value = text;
+  el.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.appendChild(el);
+  el.focus(); el.select();
+  try { document.execCommand('copy'); if (cb) cb(); } catch(e) {}
+  document.body.removeChild(el);
+}
+
+var data = {
+  face: {
+    label: '😊 表情臉孔',
+    emojis: [
+      ['😀','開心'],['😃','大笑'],['😄','喜悅'],['😁','咧嘴'],['😆','哈哈'],
+      ['😅','汗笑'],['🤣','笑哭'],['😂','哭笑'],['🙂','微笑'],['🙃','倒臉'],
+      ['😉','眨眼'],['😊','臉紅'],['😇','光環'],['🥰','愛心臉'],['😍','花眼'],
+      ['🤩','星眼'],['😘','飛吻'],['😗','親親'],['😚','閉眼吻'],['😙','微笑吻'],
+      ['😋','好吃'],['😛','吐舌'],['😜','眨舌'],['🤪','鬼臉'],['😝','瞇眼舌'],
+      ['🤑','錢眼'],['🤗','擁抱'],['🤭','捂嘴'],['🤫','噓'],['🤔','思考'],
+      ['😐','無表情'],['😑','無語'],['😶','沒嘴'],['😏','壞笑'],['😒','不屑'],
+      ['🙄','翻白眼'],['😬','尷尬'],['😮','驚訝'],['😯','目瞪'],['😲','震驚'],
+      ['😳','脹紅'],['🥺','懇求'],['😦','憂'],['😧','痛苦'],['😨','恐懼'],
+      ['😰','冷汗'],['😥','失望'],['😢','哭泣'],['😭','嚎啕'],['😱','尖叫'],
+      ['😖','沮喪'],['😣','苦惱'],['😞','難過'],['😓','汗顏'],['😩','疲憊'],
+      ['😫','累'],['🥱','哈欠'],['😤','冒氣'],['😡','憤怒'],['🤬','爆粗'],
+      ['😈','惡魔'],['👿','生氣鬼'],['💀','骷髏'],['😷','口罩'],['🤒','發燒'],
+      ['🤕','受傷'],['🤢','噁心'],['🤮','嘔吐'],['🥴','暈頭'],['😵','暈'],
+      ['🤯','爆頭'],['🥳','派對'],['😎','酷'],['🤓','書呆'],['🧐','單眼鏡']
+    ]
+  },
+  gesture: {
+    label: '👋 手勢與人物',
+    emojis: [
+      ['👋','揮手'],['🤚','舉手'],['🖐','五指'],['✋','停'],['🖖','瓦肯'],
+      ['👌','OK'],['🤌','捏手'],['✌️','勝利'],['🤞','交叉'],['🤟','愛你'],
+      ['🤘','搖滾'],['🤙','打電話'],['👈','左指'],['👉','右指'],['👆','上指'],
+      ['👇','下指'],['☝️','食指'],['👍','讚'],['👎','噓'],['✊','拳頭'],
+      ['👊','打拳'],['🤛','左拳'],['🤜','右拳'],['👏','鼓掌'],['🙌','舉雙手'],
+      ['🤲','雙手捧'],['🤝','握手'],['🙏','合掌'],['💪','肌肉'],['💅','美甲'],
+      ['👀','眼睛們'],['👁','眼睛'],['👂','耳朵'],['👃','鼻子'],['💋','嘴唇'],
+      ['🧠','大腦'],['🫀','心臟'],['🦸','英雄'],['🧑‍💻','工程師'],['🧑‍🍳','廚師']
+    ]
+  },
+  heart: {
+    label: '❤️ 愛心與情感',
+    emojis: [
+      ['❤️','紅心'],['🧡','橙心'],['💛','黃心'],['💚','綠心'],['💙','藍心'],
+      ['💜','紫心'],['🖤','黑心'],['🤍','白心'],['🤎','棕心'],['💔','碎心'],
+      ['❤️‍🔥','火心'],['❤️‍🩹','治癒心'],['💕','雙心'],['💞','旋轉心'],['💓','跳動心'],
+      ['💗','粉心'],['💖','閃心'],['💘','丘比特'],['💝','禮物心'],['💟','心形'],
+      ['♥️','花色心'],['💌','情書'],['💋','親吻'],['💑','情侶'],['👫','男女'],
+      ['🥂','乾杯'],['🎁','禮物'],['🌹','玫瑰'],['💐','花束'],['🌸','櫻花']
+    ]
+  },
+  nature: {
+    label: '🌿 自然與動物',
+    emojis: [
+      ['🌸','櫻花'],['🌺','扶桑'],['🌻','向日葵'],['🌹','玫瑰'],['🌷','鬱金香'],
+      ['💐','花束'],['🍀','四葉草'],['🌿','樹葉'],['🍃','落葉'],['🌱','嫩芽'],
+      ['🌲','松樹'],['🌳','落葉樹'],['🌴','棕櫚'],['🎋','竹子'],['🎍','松枝'],
+      ['☀️','太陽'],['🌤','晴有雲'],['⛅','多雲'],['🌧','雨'],['⛈','雷雨'],
+      ['🌩','閃電'],['❄️','雪花'],['🌈','彩虹'],['🌊','海浪'],['🔥','火'],
+      ['💧','水滴'],['🌙','月亮'],['⭐','星星'],['🌟','發光星'],['✨','閃亮'],
+      ['🌍','地球'],['🦁','獅子'],['🐯','老虎'],['🐻','熊'],['🐼','熊貓'],
+      ['🦊','狐狸'],['🐶','狗'],['🐱','貓'],['🐰','兔子'],['🦋','蝴蝶']
+    ]
+  },
+  food: {
+    label: '🍕 美食飲料',
+    emojis: [
+      ['🍎','蘋果'],['🍊','橘子'],['🍋','檸檬'],['🍇','葡萄'],['🍓','草莓'],
+      ['🍑','桃子'],['🍒','櫻桃'],['🍍','鳳梨'],['🥭','芒果'],['🍌','香蕉'],
+      ['🍉','西瓜'],['🍕','比薩'],['🍔','漢堡'],['🍟','薯條'],['🌮','墨西哥捲'],
+      ['🍜','拉麵'],['🍱','便當'],['🍣','壽司'],['🍩','甜甜圈'],['🎂','蛋糕'],
+      ['🧁','杯子蛋糕'],['🍰','蛋糕片'],['🍫','巧克力'],['🍬','糖果'],['🍭','棒棒糖'],
+      ['☕','咖啡'],['🧋','珍珠奶茶'],['🥤','飲料'],['🍺','啤酒'],['🥂','香檳'],
+      ['🍷','紅酒'],['🍸','雞尾酒'],['🧃','果汁'],['🍵','茶'],['🍦','冰淇淋']
+    ]
+  },
+  travel: {
+    label: '✈️ 旅遊地點',
+    emojis: [
+      ['✈️','飛機'],['🚀','火箭'],['🚂','火車'],['🚗','汽車'],['🚕','計程車'],
+      ['🚌','公車'],['🚢','輪船'],['⛵','帆船'],['🏔','高山'],['🗻','富士山'],
+      ['🌋','火山'],['🏝','小島'],['🏖','海灘'],['🌅','日出'],['🌇','夕陽城'],
+      ['🌉','夜橋'],['🗼','東京塔'],['🗽','自由女神'],['🏰','城堡'],['⛩','鳥居'],
+      ['🗺','地圖'],['🧳','行李'],['🎒','背包'],['📸','相機'],['🏕','露營']
+    ]
+  },
+  activity: {
+    label: '⚽ 運動活動',
+    emojis: [
+      ['⚽','足球'],['🏀','籃球'],['🏈','美式足球'],['⚾','棒球'],['🎾','網球'],
+      ['🏐','排球'],['🎱','撞球'],['🏓','桌球'],['🏸','羽球'],['🥊','拳擊'],
+      ['🎯','飛鏢'],['🎮','遊戲'],['🎲','骰子'],['🎭','戲劇'],['🎨','藝術'],
+      ['🎬','電影'],['🎵','音符'],['🎶','音樂'],['🎤','麥克風'],['🎧','耳機'],
+      ['🎸','吉他'],['🎹','鋼琴'],['🥁','鼓'],['🏆','獎盃'],['🥇','金牌']
+    ]
+  },
+  object: {
+    label: '💡 物品工具',
+    emojis: [
+      ['💡','燈泡'],['📱','手機'],['💻','筆電'],['🖥','桌電'],['⌨️','鍵盤'],
+      ['📷','相機'],['📹','攝影機'],['📺','電視'],['📻','收音機'],['☎️','舊電話'],
+      ['📬','信箱'],['📦','箱子'],['📁','資料夾'],['📋','剪貼板'],['📌','圖釘'],
+      ['📍','定位釘'],['✏️','鉛筆'],['🖊','鋼筆'],['📝','便條'],['📚','書堆'],
+      ['🔑','鑰匙'],['🔒','鎖'],['💰','錢袋'],['💎','鑽石'],['⌚','手錶']
+    ]
+  },
+  symbol: {
+    label: '🔥 熱門符號',
+    emojis: [
+      ['🔥','火'],['💥','爆炸'],['✨','閃亮'],['⚡','閃電'],['💫','暈眩'],
+      ['🌟','發光'],['⭐','星星'],['🎉','派對'],['🎊','慶祝'],['🎈','氣球'],
+      ['🎀','蝴蝶結'],['🎁','禮物'],['🎯','目標'],['🚨','警報'],['⚠️','警告'],
+      ['🚫','禁止'],['✅','勾選'],['❌','叉叉'],['❓','問號'],['❗','驚嘆號'],
+      ['💯','百分'],['🆕','新'],['🆓','免費'],['🔝','最高'],['🔜','即將'],
+      ['🔛','開啟'],['⏰','鬧鐘'],['⏳','沙漏'],['📢','廣播'],['🔔','鈴鐺'],
+      ['💬','對話'],['💭','思考泡'],['📣','喇叭'],['🗣','說話'],['📌','釘'],
+      ['🏷','標籤'],['🔖','書籤'],['🔗','連結'],['🔁','重複'],['♻️','回收']
+    ]
+  },
+  bullet: {
+    label: '▪️ 條列項目符號',
+    emojis: [
+      ['▪️','小黑方'],['▫️','小白方'],['◾','中黑方'],['◽','中白方'],['⬛','大黑方'],
+      ['⬜','大白方'],['🔲','黑框方'],['🔳','白框方'],['🔷','藍菱'],['🔶','橘菱'],
+      ['🔹','小藍菱'],['🔸','小橘菱'],['🔴','紅圓'],['🟠','橘圓'],['🟡','黃圓'],
+      ['🟢','綠圓'],['🔵','藍圓'],['🟣','紫圓'],['⚫','黑圓'],['⚪','白圓'],
+      ['🔺','上三角'],['🔻','下三角'],['🔼','空心上'],['🔽','空心下'],['▶️','右播'],
+      ['➡️','右箭'],['⬅️','左箭'],['⬆️','上箭'],['⬇️','下箭'],['↗️','右上箭'],
+      ['✔️','細勾'],['☑️','勾方'],['✅','綠勾'],['❎','叉方'],['〰️','波浪線'],
+      ['➕','加號'],['➖','減號'],['💠','藍花菱'],['🔘','選項鈕'],['📍','定位']
+    ],
+    examples: [
+      { label: '✅ 優點清單', text: '✅ 操作簡單，新手秒上手\n✅ 支援多種格式匯出\n✅ 24 小時客服即時回應\n✅ 免費試用 30 天' },
+      { label: '🔹 產品特色', text: '🔹 超輕薄機身設計\n🔹 14 小時超長電池續航\n🔹 120Hz 高刷新螢幕\n🔹 IPX5 防水等級' },
+      { label: '📌 注意事項', text: '📌 請於付款後 3 日內完成取貨\n📌 商品拆封後不支援退換\n📌 如有問題請私訊客服\n📌 限台灣本島配送' },
+      { label: '▶️ 步驟教學', text: '▶️ Step 1  下載 App 並完成註冊\n▶️ Step 2  填寫個人基本資料\n▶️ Step 3  選擇訂閱方案\n▶️ Step 4  開始使用所有功能' },
+      { label: '🔶 公告標題', text: '🔶 重要公告 🔶\n\n🔸 系統將於週日凌晨維護\n🔸 維護時間約 2 小時\n🔸 如有疑問請聯繫客服' },
+      { label: '🟢 方案比較', text: '🟢 免費版　基本功能 5GB\n🟡 進階版　全功能 50GB\n🔴 企業版　無限容量 + API' },
+      { label: '💠 精緻風格', text: '💠 早安時光の早餐推薦\n\n💠 酪梨吐司 + 半熟蛋\n💠 手沖黑咖啡\n💠 季節水果拼盤' },
+      { label: '◾ 目標清單', text: '2025 目標 🎯\n\n◾ 每週運動 3 次\n◾ 讀完 12 本書\n◾ 學會一門新技能\n◾ 存到第一桶金' },
+      { label: '❗ 限時提醒', text: '❗ 限時 48 小時特賣 ❗\n\n▪️ 全館服飾 7 折\n▪️ 指定商品買二送一\n▪️ 滿 $999 免運費' }
+    ]
+  },
+  number: {
+    label: '🔢 數字 Emoji',
+    emojis: [
+      ['0️⃣','0'],['1️⃣','1'],['2️⃣','2'],['3️⃣','3'],['4️⃣','4'],
+      ['5️⃣','5'],['6️⃣','6'],['7️⃣','7'],['8️⃣','8'],['9️⃣','9'],
+      ['🔟','10'],['💯','100'],['#️⃣','井號'],['*️⃣','星號'],['🔢','計數'],
+      ['🅰️','A型'],['🅱️','B型'],['🆎','AB型'],['🆑','CL'],['🆒','酷'],
+      ['🆓','免費'],['ℹ️','資訊'],['🆔','ID'],['Ⓜ️','地鐵'],['🆕','新'],
+      ['🆖','NG'],['🅾️','O型'],['🆗','OK'],['🅿️','停車'],['🆘','SOS'],
+      ['🆙','往上'],['🆚','VS'],['🔣','符號'],['🔤','英文'],['🔡','小寫'],
+      ['🔠','大寫'],['🈁','此'],['🈶','有'],['🈯','指定'],['🈹','割引']
+    ],
+    examples: [
+      { label: '1️⃣ 步驟編號', text: '1️⃣ 先將食材洗淨切好\n2️⃣ 熱鍋後加入適量油\n3️⃣ 大火快炒 3 分鐘\n4️⃣ 加入調味料拌勻\n5️⃣ 盛盤後即可享用 🍽️' },
+      { label: '🔟 TOP 排行', text: '本週 TOP 5 🔥\n\n5️⃣ 第五名 ...\n4️⃣ 第四名 ...\n3️⃣ 第三名 ...\n2️⃣ 第二名 ...\n1️⃣ 🏆 冠軍 ...' },
+      { label: '#️⃣ 票選活動', text: '#️⃣ 投票時間！\n\n1️⃣ 選項 A — 海邊踏浪\n2️⃣ 選項 B — 山上露營\n3️⃣ 選項 C — 城市探索\n\n留言數字告訴我你的選擇 👇' },
+      { label: '🔢 活動場次', text: '📅 活動場次資訊\n\n1️⃣ 場：週六 14:00\n2️⃣ 場：週六 16:00\n3️⃣ 場：週日 14:00\n4️⃣ 場：週日 16:00\n\n名額有限，速速報名 🎟️' },
+      { label: '💯 評分展示', text: '⭐ 本週課程學員評分\n\n滿意度　💯 98分\n課程內容　9️⃣5️⃣ 分\n講師評分　9️⃣8️⃣ 分\n推薦指數　🔟 滿分' },
+      { label: '🆚 方案比較', text: '🅰️ 基礎方案　免費\n🅱️ 進階方案　$299 / 月\n🆎 旗艦方案　$599 / 月\n\n立即升級享首月 5️⃣ 折 🎉' }
+    ]
+  },
+  flag: {
+    label: '🎌 常見旗幟',
+    emojis: [
+      ['🇹🇼','台灣'],['🇺🇸','美國'],['🇯🇵','日本'],['🇰🇷','韓國'],['🇨🇳','中國'],
+      ['🇬🇧','英國'],['🇫🇷','法國'],['🇩🇪','德國'],['🇮🇹','義大利'],['🇪🇸','西班牙'],
+      ['🇵🇹','葡萄牙'],['🇧🇷','巴西'],['🇦🇺','澳洲'],['🇨🇦','加拿大'],['🇲🇽','墨西哥'],
+      ['🇸🇬','新加坡'],['🇭🇰','香港'],['🇹🇭','泰國'],['🇻🇳','越南'],['🇮🇳','印度'],
+      ['🇷🇺','俄羅斯'],['🇳🇱','荷蘭'],['🇸🇪','瑞典'],['🇨🇭','瑞士'],['🇳🇴','挪威'],
+      ['🏳️‍🌈','彩虹旗'],['🏴‍☠️','海盜'],['🚩','紅旗'],['🎌','日本旗'],['🌐','地球網']
+    ]
+  }
+};
+
+var sectionsEl = document.getElementById('sections');
+var tabNav = document.getElementById('tabNav');
+var searchInput = document.getElementById('searchInput');
+var noResults = document.getElementById('noResults');
+
+Object.keys(data).forEach(function(cat) {
+  var info = data[cat];
+  var sec = document.createElement('div');
+  sec.className = 'section visible';
+  sec.dataset.cat = cat;
+
+  var titleDiv = document.createElement('div');
+  titleDiv.className = 'section-title';
+  titleDiv.textContent = info.label;
+  sec.appendChild(titleDiv);
+
+  var grid = document.createElement('div');
+  grid.className = 'emoji-grid';
+  info.emojis.forEach(function(pair) {
+    var emoji = pair[0], label = pair[1];
+    var item = document.createElement('div');
+    item.className = 'emoji-item';
+    item.dataset.label = label;
+    item.dataset.emoji = emoji;
+    item.innerHTML = '<span class="emoji-char">' + emoji + '</span><span class="emoji-label">' + label + '</span>';
+    item.addEventListener('click', (function(e, i) {
+      return function() {
+        doCopy(e, function() {
+          i.classList.add('copied');
+          setTimeout(function() { i.classList.remove('copied'); }, 600);
+          showToast('✅ 已複製 ' + e);
+        });
+      };
+    })(emoji, item));
+    grid.appendChild(item);
+  });
+  sec.appendChild(grid);
+
+  if (info.examples && info.examples.length) {
+    var exBlock = document.createElement('div');
+    exBlock.className = 'examples-block';
+    var hdr = document.createElement('div');
+    hdr.className = 'examples-header';
+    hdr.textContent = '💡 實際應用範例（點擊複製整段）';
+    exBlock.appendChild(hdr);
+    var exGrid = document.createElement('div');
+    exGrid.className = 'examples-grid';
+    info.examples.forEach(function(ex) {
+      var card = document.createElement('div');
+      card.className = 'example-card';
+      var hint = document.createElement('div');
+      hint.className = 'copy-hint';
+      hint.textContent = '點擊複製';
+      var lbl = document.createElement('div');
+      lbl.className = 'example-card-label';
+      lbl.textContent = ex.label;
+      var pre = document.createElement('pre');
+      pre.textContent = ex.text;
+      card.appendChild(hint);
+      card.appendChild(lbl);
+      card.appendChild(pre);
+      card.addEventListener('click', (function(t, c) {
+        return function() {
+          doCopy(t, function() {
+            c.classList.add('copied');
+            setTimeout(function() { c.classList.remove('copied'); }, 800);
+            showToast('✅ 已複製範例文字！');
+          });
+        };
+      })(ex.text, card));
+      exGrid.appendChild(card);
+    });
+    exBlock.appendChild(exGrid);
+    sec.appendChild(exBlock);
+  }
+
+  sectionsEl.appendChild(sec);
+});
+
+tabNav.addEventListener('click', function(e) {
+  var btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  searchInput.value = '';
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  var cat = btn.dataset.cat;
+  document.querySelectorAll('.section').forEach(function(s) {
+    s.classList.toggle('visible', cat === 'all' || s.dataset.cat === cat);
+  });
+  document.querySelectorAll('.emoji-item').forEach(function(i) { i.style.display = ''; });
+  noResults.classList.remove('show');
+});
+
+searchInput.addEventListener('input', function() {
+  var q = searchInput.value.trim().toLowerCase();
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.cat === 'all');
+  });
+  if (!q) {
+    document.querySelectorAll('.section').forEach(function(s) { s.classList.add('visible'); });
+    document.querySelectorAll('.emoji-item').forEach(function(i) { i.style.display = ''; });
+    noResults.classList.remove('show');
+    return;
+  }
+  var any = false;
+  document.querySelectorAll('.section').forEach(function(sec) {
+    var secHas = false;
+    sec.querySelectorAll('.emoji-item').forEach(function(item) {
+      var match = item.dataset.label.includes(q) || item.dataset.emoji.includes(q);
+      item.style.display = match ? '' : 'none';
+      if (match) { secHas = true; any = true; }
+    });
+    sec.classList.toggle('visible', secHas);
+  });
+  noResults.classList.toggle('show', !any);
+});
+</script>
+</body>
+</html>
